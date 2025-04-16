@@ -916,7 +916,6 @@ class Dataset(Dataset):
         return self.transform(img)
 
 # trainer class
-
 @beartype
 class Trainer(object):
     def __init__(
