@@ -18,7 +18,7 @@ from beartype import beartype
 from einops import rearrange, reduce, repeat
 from einops.layers.torch import Rearrange
 
-from rin_pytorch.attend import Attend
+from .rin_attend import Attend
 
 from PIL import Image
 from tqdm.auto import tqdm
@@ -472,7 +472,7 @@ class RIN(nn.Module):
             attn_kwargs = {**attn_kwargs, 'time_cond_dim': time_dim}
 
         self.blocks = nn.ModuleList([RINBlock(dim, dim_latent = dim_latent, latent_self_attn_depth = latent_self_attn_depth, patches_self_attn = patches_self_attn, **attn_kwargs) for _ in range(depth)])
-
+ 
     @property
     def device(self):
         return next(self.parameters()).device
@@ -597,7 +597,6 @@ def gamma_to_log_snr(gamma, scale = 1, eps = 1e-5):
 class GaussianDiffusion(nn.Module):
     def __init__(
         self,
-        model: RIN,
         *,
         timesteps = 1000,
         use_ddim = True,
@@ -611,13 +610,9 @@ class GaussianDiffusion(nn.Module):
         scale = 1.                      # this will be set to < 1. for better convergence when training on higher resolution images
     ):
         super().__init__()
-        self.model = model
-        self.channels = self.model.channels
 
         assert objective in {'x0', 'eps', 'v'}, 'objective must be either predict x0 or noise'
         self.objective = objective
-
-        self.image_size = model.image_size
 
         if noise_schedule == "linear":
             self.gamma_schedule = simple_linear_schedule
@@ -655,9 +650,9 @@ class GaussianDiffusion(nn.Module):
         self.min_snr_loss_weight = min_snr_loss_weight
         self.min_snr_gamma = min_snr_gamma
 
-    @property
-    def device(self):
-        return next(self.model.parameters()).device
+    # @property
+    # def device(self):
+    #     return next(self.model.parameters()).device
 
     def get_sampling_timesteps(self, batch, *, device):
         times = torch.linspace(1., 0., self.timesteps + 1, device = device)
@@ -667,8 +662,8 @@ class GaussianDiffusion(nn.Module):
         return times
 
     @torch.no_grad()
-    def ddpm_sample(self, shape, time_difference = None):
-        batch, device = shape[0], self.device
+    def ddpm_sample(self, model, shape, time_difference = None):
+        batch, device = shape[0], next(model.parameters()).device
 
         time_difference = default(time_difference, self.time_difference)
 
@@ -690,7 +685,7 @@ class GaussianDiffusion(nn.Module):
             # get predicted x0
 
             maybe_normalized_img = self.maybe_normalize_img_variance(img)
-            model_output, last_latents = self.model(maybe_normalized_img, noise_cond, x_start, last_latents, return_latents = True)
+            model_output, last_latents = model(maybe_normalized_img, noise_cond, x_start, last_latents, return_latents = True)
 
             # get log(snr)
 
@@ -741,8 +736,8 @@ class GaussianDiffusion(nn.Module):
         return unnormalize_img(img)
 
     @torch.no_grad()
-    def ddim_sample(self, shape, time_difference = None):
-        batch, device = shape[0], self.device
+    def ddim_sample(self, model, shape, time_difference = None):
+        batch, device = shape[0], next(model.parameters()).device
 
         time_difference = default(time_difference, self.time_difference)
 
@@ -772,7 +767,7 @@ class GaussianDiffusion(nn.Module):
             # predict x0
 
             maybe_normalized_img = self.maybe_normalize_img_variance(img)
-            model_output, last_latents = self.model(maybe_normalized_img, times, x_start, last_latents, return_latents = True)
+            model_output, last_latents = model(maybe_normalized_img, times, x_start, last_latents, return_latents = True)
 
             # calculate x0 and noise
 
@@ -805,13 +800,13 @@ class GaussianDiffusion(nn.Module):
         sample_fn = self.ddpm_sample if not self.use_ddim else self.ddim_sample
         return sample_fn((batch_size, channels, image_size, image_size))
 
-    def forward(self, img, *args, **kwargs):
+    def forward(self, model, img, times):
         batch, c, h, w, device, img_size, = *img.shape, img.device, self.image_size
-        assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
+        # assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
 
         # sample random times
 
-        times = torch.zeros((batch,), device = device).float().uniform_(0, 1.)
+        # times = torch.zeros((batch,), device = device).float().uniform_(0, 1.)
 
         # convert image to bit representation
 
@@ -836,7 +831,7 @@ class GaussianDiffusion(nn.Module):
 
         if random() < self.train_prob_self_cond:
             with torch.no_grad():
-                model_output, self_latents = self.model(noised_img, times, return_latents = True)
+                model_output, self_latents = model(noised_img, times, return_latents = True)
                 self_latents = self_latents.detach()
 
                 if self.objective == 'x0':
@@ -853,7 +848,7 @@ class GaussianDiffusion(nn.Module):
 
         # predict and take gradient step
 
-        pred = self.model(noised_img, times, self_cond, self_latents)
+        pred = model(noised_img, times, self_cond, self_latents)
 
         if self.objective == 'eps':
             target = noise
