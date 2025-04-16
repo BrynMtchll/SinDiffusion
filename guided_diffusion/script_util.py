@@ -168,6 +168,7 @@ def create_rin_model(
     num_channels,
 ):
     return RIN(
+        dim=256,
         image_size=image_size,
         patch_size=image_size,
         channels=num_channels,
