@@ -202,7 +202,7 @@ class TrainLoop:
             micro = F.interpolate(micro, (curr_h, curr_w), mode="bicubic")
 
             compute_losses = functools.partial(
-                self.diffusion.training_losses,
+                self.diffusion.forward,
                 self.ddp_model,
                 micro,
                 t,
@@ -215,16 +215,16 @@ class TrainLoop:
                 with self.ddp_model.no_sync():
                     losses = compute_losses()
 
-            if isinstance(self.schedule_sampler, LossAwareSampler):
-                self.schedule_sampler.update_with_local_losses(
-                    t, losses["loss"].detach()
-                )
+            # if isinstance(self.schedule_sampler, LossAwareSampler):
+            #     self.schedule_sampler.update_with_local_losses(
+            #         t, losses["loss"].detach()
+            #     )
 
-            loss = (losses["loss"] * weights).mean()
+            # loss = (losses["loss"] * weights).mean()
             log_loss_dict(
-                self.diffusion, t, {k: v * weights for k, v in losses.items()}
+                self.diffusion, t, {k: v * weights for k, v in losses}
             )
-            self.mp_trainer.backward(loss)
+            self.mp_trainer.backward(losses)
 
     def _update_ema(self):
         for rate, params in zip(self.ema_rate, self.ema_params):

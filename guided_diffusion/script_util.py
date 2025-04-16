@@ -3,6 +3,7 @@ import argparse
 import inspect
 
 from . import gaussian_diffusion as gd
+from rin_pytorch import GaussianDiffusion, RIN
 from .respace import SpacedDiffusion, space_timesteps
 from .sinddpm import UNetModel
 from .imresize import imresize
@@ -72,6 +73,40 @@ def classifier_and_diffusion_defaults():
     res.update(diffusion_defaults())
     return res
 
+def create_rin_model_and_diffusion(
+    image_size,
+    class_cond,
+    learn_sigma,
+    num_channels,
+    num_res_blocks,
+    channel_mult,
+    num_heads,
+    num_head_channels,
+    num_heads_upsample,
+    attention_resolutions,
+    dropout,
+    diffusion_steps,
+    noise_schedule,
+    timestep_respacing,
+    use_kl,
+    predict_xstart,
+    rescale_timesteps,
+    rescale_learned_sigmas,
+    use_checkpoint,
+    use_scale_shift_norm,
+    resblock_updown,
+    use_fp16,
+    use_new_attention_order,
+):
+    model = create_rin_model(
+        image_size,
+        num_channels,
+    )
+    diffusion = create_rin_gaussian_diffusion(
+        model=model,
+        steps=diffusion_steps,
+    )
+    return model, diffusion
 
 def create_model_and_diffusion(
     image_size,
@@ -128,6 +163,15 @@ def create_model_and_diffusion(
     )
     return model, diffusion
 
+def create_rin_model(
+    image_size,
+    num_channels,
+):
+    return RIN(
+        image_size=image_size,
+        patch_size=image_size,
+        channels=num_channels,
+    )
 
 def create_model(
     image_size,
@@ -386,6 +430,15 @@ def sr_create_model(
         use_fp16=use_fp16,
     )
 
+def create_rin_gaussian_diffusion(
+    *,
+    model,
+    steps=1000,
+):
+    return GaussianDiffusion(
+        model=model,
+        timesteps=steps,
+    )  
 
 def create_gaussian_diffusion(
     *,

@@ -12,6 +12,7 @@ from guided_diffusion.image_datasets import load_data
 from guided_diffusion.resample import create_named_schedule_sampler
 from guided_diffusion.script_util import (
     model_and_diffusion_defaults,
+    create_rin_model_and_diffusion,
     create_model_and_diffusion,
     args_to_dict,
     add_dict_to_argparser,
@@ -31,10 +32,15 @@ def main():
 
     logger.configure()
 
-    logger.log("creating model and diffusion...")
-    model, diffusion = create_model_and_diffusion(
+    logger.log("creating RIN model and diffusion...")
+    model, diffusion = create_rin_model_and_diffusion(
         **args_to_dict(args, model_and_diffusion_defaults().keys())
     )
+
+    # logger.log("creating model and diffusion...")
+    # model, diffusion = create_model_and_diffusion(
+    #     **args_to_dict(args, model_and_diffusion_defaults().keys())
+    # )
     model.to(dist_util.dev())
     schedule_sampler = create_named_schedule_sampler(args.schedule_sampler, diffusion)
 
