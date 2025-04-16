@@ -3,7 +3,7 @@ import argparse
 import inspect
 
 from . import gaussian_diffusion as gd
-from rin_pytorch import GaussianDiffusion, RIN
+from .rin_pytorch import GaussianDiffusion, RIN
 from .respace import SpacedDiffusion, space_timesteps
 from .sinddpm import UNetModel
 from .imresize import imresize
