@@ -390,6 +390,7 @@ class RIN(nn.Module):
         patches_self_attn = True,       # the self attention in this repository is not strictly with the design proposed in the paper. offer way to remove it, in case it is the source of instability
         **attn_kwargs
     ):
+        print("initialising RIN model..")
         super().__init__()
         assert divisible_by(image_size, patch_size)
         dim_latent = default(dim_latent, dim)
@@ -467,7 +468,6 @@ class RIN(nn.Module):
         nn.init.zeros_(self.init_self_cond_latents[-1].gamma)
 
         # the main RIN body parameters  - another attention is all you need moment
-
         if not latent_token_time_cond:
             attn_kwargs = {**attn_kwargs, 'time_cond_dim': time_dim}
 
@@ -801,7 +801,7 @@ class GaussianDiffusion(nn.Module):
         return sample_fn((batch_size, channels, image_size, image_size))
 
     def forward(self, model, img, times):
-        batch, c, h, w, device, img_size, = *img.shape, img.device, self.image_size
+        batch, c, h, w, device, img_size, = *img.shape, img.device, model.module.image_size
         # assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
 
         # sample random times

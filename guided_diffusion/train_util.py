@@ -206,7 +206,6 @@ class TrainLoop:
                 self.ddp_model,
                 micro,
                 t,
-                model_kwargs=micro_cond,
             )
 
             if last_batch or not self.use_ddp:

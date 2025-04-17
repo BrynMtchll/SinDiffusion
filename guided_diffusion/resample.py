@@ -61,7 +61,7 @@ class ScheduleSampler(ABC):
 class UniformSampler(ScheduleSampler):
     def __init__(self, diffusion):
         self.diffusion = diffusion
-        self._weights = np.ones([diffusion.num_timesteps])
+        self._weights = np.ones([diffusion.timesteps])
 
     def weights(self):
         return self._weights

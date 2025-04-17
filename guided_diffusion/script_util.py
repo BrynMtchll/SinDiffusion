@@ -102,10 +102,11 @@ def create_rin_model_and_diffusion(
         image_size,
         num_channels,
     )
+    print("model created")
     diffusion = create_rin_gaussian_diffusion(
-        model=model,
         steps=diffusion_steps,
     )
+    print("diffusion created")
     return model, diffusion
 
 def create_model_and_diffusion(
@@ -168,7 +169,7 @@ def create_rin_model(
     num_channels,
 ):
     return RIN(
-        dim=256,
+        dim=64,
         image_size=image_size,
         patch_size=image_size,
         channels=num_channels,
@@ -433,11 +434,9 @@ def sr_create_model(
 
 def create_rin_gaussian_diffusion(
     *,
-    model,
     steps=1000,
 ):
     return GaussianDiffusion(
-        model=model,
         timesteps=steps,
     )  
 

@@ -163,12 +163,12 @@ class MixedPrecisionTrainer:
         self.param_groups_and_shapes = None
         self.lg_loss_scale = initial_lg_loss_scale
 
-        if self.use_fp16:
-            self.param_groups_and_shapes = get_param_groups_and_shapes(
-                self.model.named_parameters()
-            )
-            self.master_params = make_master_params(self.param_groups_and_shapes)
-            self.model.convert_to_fp16()
+        # if self.use_fp16:
+        #     self.param_groups_and_shapes = get_param_groups_and_shapes(
+        #         self.model.named_parameters()
+        #     )
+        #     self.master_params = make_master_params(self.param_groups_and_shapes)
+        #     self.model.convert_to_fp16()
 
     def zero_grad(self):
         zero_grad(self.model_params)
