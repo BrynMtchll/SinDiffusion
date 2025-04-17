@@ -199,7 +199,9 @@ class TrainLoop:
                 MPI.COMM_WORLD.bcast((curr_h, curr_w))
             else:
                 curr_h, curr_w = MPI.COMM_WORLD.bcast(None)
-            micro = F.interpolate(micro, (curr_h, curr_w), mode="bicubic")
+            micro = F.interpolate(micro, (256, 256), mode="bicubic")
+            print(micro.shape)
+            print(batch.shape)
 
             compute_losses = functools.partial(
                 self.diffusion.forward,
