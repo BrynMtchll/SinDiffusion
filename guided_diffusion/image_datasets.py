@@ -126,8 +126,7 @@ class ImageDataset(Dataset):
         out_dict = {}
         # if self.pil_image_lr is not None:
         #     out_dict["y"] = np.transpose(arr_lr.astype(np.float32) / 127.5 - 1, [2, 0, 1])
-
-        return F.interpolate(arr, (self.resolution, self.resolution), mode="bicubic"), out_dict
+        return arr, out_dict
 
 
 def center_crop_arr(pil_image, image_size, crop_size):
