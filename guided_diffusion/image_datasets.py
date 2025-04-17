@@ -7,7 +7,7 @@ from mpi4py import MPI
 import numpy as np
 import cv2
 from torch.utils.data import DataLoader, Dataset
-import torch.nn.functional as F
+from torchvision import transforms as T, utils
 
 
 def load_data(
@@ -111,11 +111,18 @@ class ImageDataset(Dataset):
         self.local_classes = None if classes is None else classes[shard:][::num_shards]
         self.blur_lr_image = blur_lr_image
 
+        self.transform = T.Compose([
+            T.Resize(self.resolution),
+            T.CenterCrop(self.resolution),
+            T.ToTensor()
+        ])
+
     def __len__(self):
         return 10000
 
     def __getitem__(self, idx):
-        arr = np.array(self.pil_image, dtype=np.float32)
+        img = self.transform(self.pil_image)
+        arr = np.array(img, dtype=np.float32)
         arr_lr = np.array(self.pil_image_lr, dtype=np.float32)
 
         if self.blur_lr_image:
@@ -126,6 +133,7 @@ class ImageDataset(Dataset):
         out_dict = {}
         # if self.pil_image_lr is not None:
         #     out_dict["y"] = np.transpose(arr_lr.astype(np.float32) / 127.5 - 1, [2, 0, 1])
+
         return arr, out_dict
 
 
