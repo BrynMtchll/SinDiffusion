@@ -7,7 +7,7 @@ from mpi4py import MPI
 import numpy as np
 import cv2
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms as T, utils
+import torch.nn.functional as F
 
 
 def load_data(
@@ -111,12 +111,6 @@ class ImageDataset(Dataset):
         self.local_classes = None if classes is None else classes[shard:][::num_shards]
         self.blur_lr_image = blur_lr_image
 
-        self.transform = T.Compose([
-            T.Resize(self.resolution),
-            T.CenterCrop(self.resolution),
-            T.ToTensor()
-        ])
-
     def __len__(self):
         return 10000
 
@@ -133,7 +127,7 @@ class ImageDataset(Dataset):
         # if self.pil_image_lr is not None:
         #     out_dict["y"] = np.transpose(arr_lr.astype(np.float32) / 127.5 - 1, [2, 0, 1])
 
-        return self.transform(arr), out_dict
+        return F.interpolate(arr, (self.resolution, self.resolution), mode="bicubic"), out_dict
 
 
 def center_crop_arr(pil_image, image_size, crop_size):
